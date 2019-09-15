@@ -1,0 +1,6 @@
+framework module EPCSpinnerView {
+  umbrella header "EPCSpinnerView-umbrella.h"
+
+  export *
+  module * { export * }
+}

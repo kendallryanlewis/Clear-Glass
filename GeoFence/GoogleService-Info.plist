@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>334758866342-qm52gm10k4ie3sfnunee7n7a2gu496bf.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.334758866342-qm52gm10k4ie3sfnunee7n7a2gu496bf</string>
+	<key>API_KEY</key>
+	<string>AIzaSyA2pUfvC-lEyLdQrGfaK9P9VmIQPZQUnsQ</string>
+	<key>GCM_SENDER_ID</key>
+	<string>334758866342</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>KendallRyanLeiws.GeoFence</string>
+	<key>PROJECT_ID</key>
+	<string>geofencing-413d0</string>
+	<key>STORAGE_BUCKET</key>
+	<string>geofencing-413d0.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:334758866342:ios:f863bb38b0a743ec</string>
+	<key>DATABASE_URL</key>
+	<string>https://geofencing-413d0.firebaseio.com</string>
+</dict>
+</plist>
