@@ -6,6 +6,7 @@ PODS:
   - BoringSSL-GRPC/Implementation (0.0.3):
     - BoringSSL-GRPC/Interface (= 0.0.3)
   - BoringSSL-GRPC/Interface (0.0.3)
+  - ChromaColorPicker (1.8.0)
   - EPCSpinnerView (0.1.6)
   - FBSDKCoreKit (5.5.0):
     - FBSDKCoreKit/Basics (= 5.5.0)
@@ -144,6 +145,7 @@ PODS:
 
 DEPENDENCIES:
   - Alamofire
+  - ChromaColorPicker
   - EPCSpinnerView
   - FBSDKCoreKit
   - FBSDKLoginKit
@@ -157,7 +159,7 @@ DEPENDENCIES:
   - LifetimeTracker
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  https://github.com/CocoaPods/Specs.git:
     - Alamofire
     - BoringSSL-GRPC
     - EPCSpinnerView
@@ -187,10 +189,13 @@ SPEC REPOS:
     - LifetimeTracker
     - nanopb
     - Protobuf
+  trunk:
+    - ChromaColorPicker
 
 SPEC CHECKSUMS:
   Alamofire: ae5c501addb7afdbb13687d7f2f722c78734c2d3
   BoringSSL-GRPC: db8764df3204ccea016e1c8dd15d9a9ad63ff318
+  ChromaColorPicker: 2e47f5acb805d53350fb7af1b511bc534b38ee31
   EPCSpinnerView: 4f32d4800252c0e05ad1cb82d118d91e8a612752
   FBSDKCoreKit: 7ade9cfea30eef2f6cf105a1aa904f89ea68fb7d
   FBSDKLoginKit: bb28062f24e79590c44ba03297ca9bea4b6436d2
@@ -219,6 +224,6 @@ SPEC CHECKSUMS:
   nanopb: 2901f78ea1b7b4015c860c2fdd1ea2fee1a18d48
   Protobuf: 1097ca58584c8d9be81bfbf2c5ff5975648dd87a
 
-PODFILE CHECKSUM: 8789c28d9b8fb05b3d713bbb83d51bc701526db5
+PODFILE CHECKSUM: d6bbbaa57d264e8e3f7f2bab6062005451743fb6
 
-COCOAPODS: 1.6.1
+COCOAPODS: 1.8.4

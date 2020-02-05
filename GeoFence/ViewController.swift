@@ -11,7 +11,10 @@ import FBSDKShareKit
 import FirebaseDatabase
 import FirebaseAuth
 import LifetimeTracker
+import EPCSpinnerView
 
+
+var loaded: Bool?
 
 /************** Check leaks in class ****************/
 class DetailItem: LifetimeTrackable {
@@ -28,6 +31,7 @@ class DetailItem: LifetimeTrackable {
 /***************** Global Variables ******************/
 let notification = UINotificationFeedbackGenerator() //haptic feedback generator
 var ref: DatabaseReference!
+var setMapView:Bool = true
 
 /**************** Store regions lists ****************/
 var regionList = [createRegion]()
@@ -52,7 +56,7 @@ class createRegion{
     }
 }
 
-class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDelegate, GMSMapViewDelegate, CLLocationManagerDelegate, ModalTransitionListener{
+class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDelegate, GMSMapViewDelegate, CLLocationManagerDelegate, ModalTransitionListener, UIScrollViewDelegate{
     /*********************************************************************/
     /******************************** Outlets ****************************/
     /*********************************************************************/
@@ -111,8 +115,10 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
     //Add version Number
     @IBOutlet weak var versionNumber: UILabel!
     
+    
+    
     /*********************************************************************/
-    /****************************** Variables ****************************/
+       /****************************** Variables ****************************/
     /*********************************************************************/
     //set map angle
     var mapViewAngle: Int? = 90
@@ -146,7 +152,11 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
     var locationView = Bundle.main.loadNibNamed("customInfoWindow", owner: self, options: nil)?.first as? locationView
     //appVersion number
     var appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+    let spinner = EPCSpinnerView()
     
+    var newLocationTextField: UITextField?
+    var noteTitleTextField: UITextField?
+    var noteMessageTextField: UITextField?
     
     
     /*********************************************************************/
@@ -157,11 +167,9 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
        // loadViewController()
     }
     override func viewDidAppear(_ animated: Bool) {
-            loadViewController()
     }
     override func viewDidLoad() {
         super.viewDidLoad()
-        ModalTransitionMediator.instance.setListener(listener: self)
         loadViewController()
     }
     //required delegate func
@@ -176,11 +184,12 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
     /************************ Load View Controller ***********************/
     /*********************************************************************/
     func loadViewController(){
+        deviceTrait()
+        
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { (granted, error) in } //create user notification
         
         /*********************** Parallax ***********************/
         //parallax()
-        dump(menuList)
         /***************** Transparent nav bar ******************/
         self.navigationController?.navigationBar.setBackgroundImage(UIImage(), for: UIBarMetrics.default)
         self.navigationController?.navigationBar.shadowImage = UIImage()
@@ -214,17 +223,6 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
         searchField.layer.cornerRadius = 8.0
         searchButton.roundCorners(corners: [.topRight,.bottomRight], radius: 8.0) //remove rounded corner
         searchView.layer.cornerRadius = 8.0
-        /*********************** note table view **********************/
-        noteTableView.delegate = self
-        noteTableView.dataSource = self
-        noteTableView.estimatedRowHeight = 105.5
-        noteTableView.maxHeight = 500
-        noteTableView.translatesAutoresizingMaskIntoConstraints = false
-        noteTableView.roundCorners(corners: [.topRight, .topLeft], radius: 8.0)
-        addNoteButton.roundCorners(corners: [.bottomLeft, .bottomRight], radius: 8.0)
-        noteView.isHidden = true // hide note view to start
-        returnHomeButton.layer.backgroundColor =  UIColor().HexToColor(hexString: colorCollection!.systemBackground , alpha: 1.0).cgColor
-        returnHomeButton.layer.opacity = 0.9
         /*********************** Main View **********************/
         mainView.layer.shadowColor = UIColor.black.cgColor //sets the color of the shadow, and needs to be a CGColor
         mainView.layer.shadowOpacity = Float(systemCollection!.systemDropShadow) //sets how transparent the shadow is, where 0 is invisible and 1 is as strong as possible
@@ -275,18 +273,35 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
         
         /***************** Functions ******************/
         createMapView() //Create map for view
-        addMarker() //Set marker to display
+        mapView.clear() //clear map view
+        addMarker() //add marker to map view
     }
     
     /*********************************************************************/
-    /**************************** Create map view ************************/
+    /****************************  Create map view  ************************/
     /*********************************************************************/
     func createMapView() {
         /******************* Google Map View ********************/
         if currentLocation != nil {
             currentLocation = locationManager.location
             mapView.camera = GMSCameraPosition.camera(withLatitude: Double((locationManager.location?.coordinate.latitude)!), longitude: Double((locationManager.location?.coordinate.longitude)!), zoom: 18, bearing: 0, viewingAngle: Double(mapCollection!.system3DDisplay))
-            mapView.mapStyle(withFilename: mapCollection!.systemMapView, andType: "json")
+            if setMapView == false {
+                if #available(iOS 12.0, *) {
+                   if traitCollection.userInterfaceStyle == .light {
+                       print("Light mode - set to dark map")
+                       mapView.mapStyle(withFilename: "dark", andType: "json")
+                   } else {
+                       print("Dark mode - set to light map")
+                       mapView.mapStyle(withFilename: "default", andType: "json")
+                   }
+                } else {
+                   // Fallback on earlier versions
+                   print("Device not supported")
+                   mapView.mapStyle(withFilename: "default", andType: "json")
+                }
+            }else{
+                mapView.mapStyle(withFilename: mapCollection!.systemMapView, andType: "json")
+            }
             UIView.animate(withDuration: 0.5) {//slide animation
                 self.mapView.animate(toZoom: 18)
             }
@@ -301,6 +316,7 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
     func addMarker() {
         var markerIndex = 0
         for items in regionList{
+            print(items)
             if items != nil{
                 locationManager.delegate = self
                 let header = items.header
@@ -382,12 +398,8 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
     func markerTapped(header: String){
         notesViewController().displayNotes(header: header)
         selectedLocation = header
-        noteTableView.reloadData()
-        noteView.isHidden = false
-        let when = DispatchTime.now() + 30
-        DispatchQueue.main.asyncAfter(deadline: when){
-            self.noteView.isHidden = true
-        }
+        
+        viewNotes(header:header)
         showNotification(title: header, items: description.count)//Display notification if app is closed
     }
 
@@ -627,13 +639,244 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
             getLocationAddress(longitude: String(coordinate.longitude), latitude: String(coordinate.latitude))
             self.geoMapView.addOverlay(geoCircle)
             newMarker.map = self.mapView //Add new marker to view
-            self.performSegue(withIdentifier: "mainToAddLocation", sender: nil) //segue to the main screen
-            mapView.clear() //clear map view
-            addMarker() //add marker to map view
-            print("Location saved successfully!")
+
+            let alert = UIAlertController(title: "New Location", message: nil, preferredStyle: .alert)
+            
+            // Add Input TextField to dialog message
+            alert.addTextField { (textField) -> Void in
+                self.newLocationTextField = textField
+                self.newLocationTextField?.placeholder = "Type in your location"
+            }
+            let next = UIAlertAction(title: "Next", style: .default, handler: { (action) -> Void in
+                print("Ok button tapped")
+                if let userInput = self.newLocationTextField!.text {
+                       print("User entered \(userInput)")
+                }
+                print("set address \(createdLocation[0].address)")
+                let titleTextField = self.newLocationTextField!.text!
+                if titleTextField != ""{
+                selectedLocation = titleTextField
+                let longitude = createdLocation[0].longitude
+                let latitude = createdLocation[0].latitude
+                let currentAddress = createdLocation[0].address
+                let currentLoc = createdLocation[0].location
+                let locationDictionary : NSDictionary = [
+                   "location": "\(currentLoc)", //add username to database
+                   "header": "\(titleTextField)",
+                   "longitude": "\(longitude)", //add longitude
+                   "latitude": "\(latitude)", //add latitude
+                   "address": "\(currentAddress)" // add name to address
+                ]
+                locationDescription.removeAll() //clear all location details elements
+                self.db.child("Users/\(userID)/Locations/\(titleTextField)").setValue(locationDictionary) {
+                       (error, ref) in
+                       if error != nil {
+                           print(error!)
+                       }
+                       else {
+                           regionList.append(createRegion(longitude: "\(longitude)", latitude: "\(latitude)", location: "\(currentLoc)", header: "\(titleTextField)", notes: noteList, address: "\(currentAddress)"))//append each location and note(s) to array
+                           //add notes to this section
+                           print("Location saved successfully!")
+                       }
+                   }
+                    self.saveNote() //Add Notes if needed
+               }
+            })
+            alert.addAction(next)
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+            alert.addAction(cancelAction)
+            self.present(alert, animated: true, completion: nil)
         }
+        mapView.clear() //clear map view
+        addMarker() //add marker to map view
+        print("Location saved successfully!")
     }
     
+    /*********************************************************************/
+    /************************** Save notes  *********************************/
+    /*********************************************************************/
+    func saveNote(){
+        let alert = UIAlertController(title: "New Note", message: nil, preferredStyle: .alert)
+        // Add Input TextField to dialog message
+        alert.addTextField { (textField) -> Void in
+            self.noteTitleTextField = textField
+            self.noteTitleTextField?.placeholder = "Type in your Note"
+        }
+        alert.addTextField { (textField) -> Void in
+            self.noteMessageTextField = textField
+            self.noteMessageTextField?.placeholder = "Type in some details"
+        }
+        let doneAction = UIAlertAction(title: "Done", style: .cancel, handler: { (action) -> Void in
+            let name = "\(self.noteTitleTextField!.text!)"
+            let message = "\(self.noteMessageTextField!.text!)"
+            if message != "" {
+               let time = "\(NSDate())"
+               let locationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(name)") //set location
+               let locationDictionary : NSDictionary = ["name": name, "message": message, "status": 0, "time": time] //location dictionary to sell
+               locationDB.setValue(locationDictionary) { //add the location dictionary to firebase
+                 (error, ref) in
+                 if error != nil {
+                     print(error!) //display if there is an error
+                 }
+                 else {
+                     /******* region list **********/
+                     for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
+                         if (region.header == selectedLocation){ //if the region clicked header equals the identifier
+                             regionList[regionIndex].notes.append(noteDisplay(name: name, message: message, time: time, status: 0)) //append note to region
+                         }
+                     }
+                 }
+                }
+            }
+        })
+        let addNote = UIAlertAction(title: "Next", style: .default, handler: { (action) -> Void in
+            let name = "\(self.noteTitleTextField!.text!)"
+            let message = "\(self.noteMessageTextField!.text!)"
+               let time = "\(NSDate())"
+               let locationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(name)") //set location
+               let locationDictionary : NSDictionary = ["name": name, "message": message, "status": 0, "time": time] //location dictionary to sell
+               locationDB.setValue(locationDictionary) { //add the location dictionary to firebase
+                 (error, ref) in
+                 if error != nil {
+                     print(error!) //display if there is an error
+                 }
+                 else {
+                     /******* region list **********/
+                     for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
+                         if (region.header == selectedLocation){ //if the region clicked header equals the identifier
+                             regionList[regionIndex].notes.append(noteDisplay(name: name, message: message, time: time, status: 0)) //append note to region
+                         }
+                     }
+                 }
+            }
+            self.saveNote()
+        })
+        
+        alert.addAction(doneAction)
+        alert.addAction(addNote)
+        self.present(alert, animated: true, completion: nil)
+    }
+    /*********************************************************************/
+    /************************** Update notes  ********************************/
+    /*********************************************************************/
+    func updateNote(header:String, message:String){
+        let alert = UIAlertController(title: "Update Note", message: nil, preferredStyle: .alert)
+        // Add Input TextField to dialog message
+        alert.addTextField { (textField) -> Void in
+            self.noteTitleTextField = textField
+            self.noteTitleTextField?.placeholder = header
+        }
+        alert.addTextField { (textField) -> Void in
+            self.noteMessageTextField = textField
+            self.noteMessageTextField?.placeholder = message
+        }
+        let delete = UIAlertAction(title: "Cancel", style: .destructive, handler:{  (action) -> Void in
+            self.deleteNote(header:header)
+        })
+        print("update note button pressed")
+        print("submit") //print the submit button
+        let title = noteTitleTextField!.text! //pull in the changed text in the text field
+        let message = noteMessageTextField!.text! //pull in the changed message in the text field
+        
+        print(title)
+        print(message)
+        if title != "" || message != "" { //Check if the either field is empty
+           /************* Firebase update **************/
+           let oldLocationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(updateTitle)") //find the location of the old notes
+           oldLocationDB.removeValue() //remove old note locations
+           let locationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(title)") //set new location to save the new note
+           let locationDictionary : NSDictionary = ["name": "\(title)", "message": "\(message)", "status": 0, "time": "\(NSDate())"] //create array to save the new note in firebase
+           locationDB.setValue(locationDictionary) { //set the array in firebase
+               (error, ref) in
+               if error != nil {
+                   print(error!) //Print if there is an error
+               }
+               else {
+                   /******* region list **********/
+                   for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
+                       if (region.header == selectedLocation){ //if the region clicked header equals the identifier
+                           for (index, notes) in region.notes.enumerated(){ //loop through the notes array
+                               if (notes.name == title){ //if note is equal to the title of the note to delete
+                                   regionList[regionIndex].notes.remove(at: index) //remove note
+                                   regionList[regionIndex].notes.append(noteDisplay(name: "\(title)", message: "\(message)", time: "\(NSDate())", status: 0)) //append note to region
+                               }
+                           }
+                       }
+                   }
+                   print("Location saved successfully!") //print if the note is saved
+               }
+           }
+       }
+        let updateNote = UIAlertAction(title: "Done", style: .cancel, handler: { (action) -> Void in
+           let name = "\(self.noteTitleTextField!.text!)"
+           let message = "\(self.noteMessageTextField!.text!)"
+           if title != "" {
+              let time = "\(NSDate())"
+              let locationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(name)") //set location
+              let locationDictionary : NSDictionary = ["name": name, "message": message, "status": 0, "time": time] //location dictionary to sell
+              locationDB.setValue(locationDictionary) { //add the location dictionary to firebase
+                (error, ref) in
+                if error != nil {
+                    print(error!) //display if there is an error
+                }
+                else {
+                    /******* region list **********/
+                    for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
+                        if (region.header == selectedLocation){ //if the region clicked header equals the identifier
+                            regionList[regionIndex].notes.append(noteDisplay(name: name, message: message, time: time, status: 0)) //append note to region
+                        }
+                    }
+                }
+               }
+           }
+       })
+        alert.addAction(delete)
+        alert.addAction(updateNote)
+        self.present(alert, animated: true, completion: nil)
+    }
+    /*********************************************************************/
+    /************************** delete Notes *******************************/
+    /*********************************************************************/
+    var updateTitle:String = ""
+    func deleteNote(header:String){
+        print("delete button pressed")
+        let oldLocationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(header)") //find location to delete
+        oldLocationDB.removeValue() //remove the values from the old location
+        /******* region list **********/
+        for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
+            if (region.header == selectedLocation){ //if the region clicked header equals the identifier
+                for (index, notes) in region.notes.enumerated(){ //loop through the notes array
+                    if (notes.name == updateTitle){ //if note is equal to the title of the note to delete
+                        regionList[regionIndex].notes.remove(at: index) //remove note
+                    }
+                }
+            }
+        }
+    }
+    /*********************************************************************/
+    /**************************** View Notes *******************************/
+    /*********************************************************************/
+    func viewNotes(header:String){
+        let alert = UIAlertController(title: header, message: "Dont Forget these!", preferredStyle: .alert)
+       let dismissAction = UIAlertAction(title: "Dismiss", style: .destructive, handler: nil)
+       for items in noteList{
+           let alertAction = UIAlertAction(title: items.name, style: UIAlertAction.Style.default, handler:{ (action) -> Void in
+            self.updateNote(header:items.name, message:items.message)
+           })
+           alert.addAction(alertAction)
+       }
+       let addNote = UIAlertAction(title: "Next", style: .default, handler: { (action) -> Void in
+           self.saveNote()
+       })
+       
+       alert.addAction(dismissAction)
+       alert.addAction(addNote)
+       self.present(alert, animated: true, completion:  nil)
+       let when = DispatchTime.now() + 10
+       DispatchQueue.main.asyncAfter(deadline: when){
+           alert.dismiss(animated: true, completion: nil)
+       }
+    }
     /*********************************************************************/
     /**************** Return to home screen  ****************/
     /*********************************************************************/
@@ -706,7 +949,7 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
             }else{
                 print("location has not changed")
             }
-            noteTableView.reloadData()
+            viewNotes(header: header)
         }
     }
     
@@ -727,10 +970,9 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
             }else{
                 print("location has not changed")
             }
-            noteTableView.reloadData()
+           viewNotes(header: header)
         }
     }
-    
     /*********************************************************************/
     /***************** location manager  notes display  ******************/
     /*********************************************************************/
@@ -738,11 +980,7 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
         notesViewController().displayNotes(header: header)
         //noteTableView.reloadData()
         let description =  [noteDisplay]() //Empty array to hold user notes
-        noteView.isHidden = false
-        let when = DispatchTime.now() + 3
-        DispatchQueue.main.asyncAfter(deadline: when){
-            self.noteView.isHidden = true
-        }
+        viewNotes(header: header)
         showNotification(title: header, items: description.count)//Display notification if app is closed
     }
     
@@ -837,6 +1075,21 @@ class ViewController: UIViewController, NSUserActivityDelegate, UITextFieldDeleg
         mainView.addMotionEffect(motionEffectGroup)
         /*********menu table view*********/
     }
+    /*********************************************************************/
+    /*************** Check If device supports IOS 12 + features **********************/
+    /*********************************************************************/
+    func deviceTrait(){
+        if #available(iOS 12.0, *) {
+            if traitCollection.userInterfaceStyle == .light {
+                print("Light mode")
+            } else {
+                print("Dark mode")
+            }
+        } else {
+            // Fallback on earlier versions
+            print("Device not supported")
+        }
+    }
     
     /*********************************************************************/
     /******* Hide keyboard when the users touches outside keyboard *******/
@@ -929,7 +1182,7 @@ extension UIView {
     }
 }
 class SelfSizedTableView: UITableView{
-    var maxHeight: CGFloat = UIScreen.main.bounds.size.height
+    var maxHeight: CGFloat = UIScreen.main.bounds.size.height / 2
     override func reloadData() {
         super.reloadData()
         self.invalidateIntrinsicContentSize()

@@ -15,6 +15,7 @@ target 'GeoFence' do
   pod 'Firebase/Firestore'
   pod 'FBSDKLoginKit'
   pod 'FBSDKShareKit'
+pod 'ChromaColorPicker'
   pod 'FBSDKCoreKit'
   pod 'LifetimeTracker'
 pod 'EPCSpinnerView'

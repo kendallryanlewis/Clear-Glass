@@ -123,7 +123,8 @@ class systemViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         if confirmationView != nil {
-            navigationItem.hidesBackButton = true
+            performSegue(withIdentifier: "ConfirmationToMain", sender: nil)
+            /*navigationItem.hidesBackButton = true
             navigationItem.setHidesBackButton(true, animated:true) //hide back button
             spinner.frame = CGRect(x: 0, y: 0, width: 290, height: 290)
             spinnerview.addSubview(spinner)
@@ -131,6 +132,7 @@ class systemViewController: UIViewController, UITextFieldDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5){
                 self.spinner.state = .success
             }
+            
             if let navController = self.navigationController {
                 for controller in navController.viewControllers {
                     if controller is ViewController { // Change to suit your menu view controller subclass
@@ -140,8 +142,11 @@ class systemViewController: UIViewController, UITextFieldDelegate {
                         break
                     }
                 }
-            }
+            }*/
         }else{
+
+            
+            performSegue(withIdentifier: "settingsToConfirmation", sender: nil)
             optionView.isHidden = true //hide option View
             /***************** Swipe gesture ******************/
             let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(self.respondToSwipeGesture))
@@ -291,6 +296,7 @@ class systemViewController: UIViewController, UITextFieldDelegate {
         systemMapDisplay() //Set system map color
         systemSettings() //System settings
         loadUpdatedSettings = true
+        performSegue(withIdentifier: "settingsToConfirmation", sender: nil)
         ModalTransitionMediator.instance.sendPopoverDismissed(modelChanged: true)
         if usernameField.text! != "" || usernameField.text! != systemCollection!.systemName{
             menuList.remove(at: 0)

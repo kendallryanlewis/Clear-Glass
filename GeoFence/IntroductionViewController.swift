@@ -109,6 +109,7 @@ class IntroductionViewController: UIViewController, CLLocationManagerDelegate, L
             UserDefaults.standard.set(Auth.auth().currentUser?.uid, forKey: "activeUserID") //save the uid to app
             firebaseRegion() //Gather user locations
             getUserSettings() //Get user settings
+
         } else {
             print("User has not logged in") //print user warning
         }
@@ -132,6 +133,7 @@ class IntroductionViewController: UIViewController, CLLocationManagerDelegate, L
                         var noteHolder: noteDisplay?
                         noteHolder = noteDisplay(name: note["name"] as! String, message: note["message"] as! String, time: note["time"] as! String, status: note["status"] as! Int)
                         noteList.append(noteHolder!) //append each note into array to hold
+
                         noteHolder = nil
                     }
                     var regionHolder: createRegion?
@@ -139,6 +141,7 @@ class IntroductionViewController: UIViewController, CLLocationManagerDelegate, L
                     regionList.append(regionHolder!) //append each location and note(s) to array
                     regionHolder = nil
                     noteList.removeAll() //clear noteList to retrieve new location
+
                 }
             }else{
                 print("system offline")

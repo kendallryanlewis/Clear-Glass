@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0930"
+   LastUpgradeVersion = "1100"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForArchiving = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DB400B47695B1AD20DC66D91C89A259B"
+               BlueprintIdentifier = "78E7B1A961CC1062B27A64289AC00F1E"
                BuildableName = "LifetimeTracker.framework"
                BlueprintName = "LifetimeTracker"
                ReferencedContainer = "container:Pods.xcodeproj">

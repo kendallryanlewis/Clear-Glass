@@ -227,59 +227,14 @@ class notesViewController: UIViewController, UITableViewDataSource, UITableViewD
     /************************ Update Note Button  ************************/
     /*********************************************************************/
     @IBAction func updateNoteButton(_ sender: Any) {
-        print("update note button pressed")
-        print("submit") //print the submit button
-        let title = titleTextField.text! //pull in the changed text in the text field
-        let message = messageTextField.text! //pull in the changed message in the text field
-        print(title)
-        print(message)
-        if title != "" || message != "" { //Check if the either field is empty
-            /************* Firebase update **************/
-            let oldLocationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(updateTitle)") //find the location of the old notes
-            oldLocationDB.removeValue() //remove old note locations
-            let locationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(title)") //set new location to save the new note
-            let locationDictionary : NSDictionary = ["name": "\(title)", "message": "\(message)", "status": 0, "time": "\(NSDate())"] //create array to save the new note in firebase
-            locationDB.setValue(locationDictionary) { //set the array in firebase
-                (error, ref) in
-                if error != nil {
-                    print(error!) //Print if there is an error
-                }
-                else {
-                    /******* region list **********/
-                    for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
-                        if (region.header == selectedLocation){ //if the region clicked header equals the identifier
-                            for (index, notes) in region.notes.enumerated(){ //loop through the notes array
-                                if (notes.name == title){ //if note is equal to the title of the note to delete
-                                    regionList[regionIndex].notes.remove(at: index) //remove note
-                                    regionList[regionIndex].notes.append(noteDisplay(name: "\(title)", message: "\(message)", time: "\(NSDate())", status: 0)) //append note to region
-                                }
-                            }
-                        }
-                    }
-                    print("Location saved successfully!") //print if the note is saved
-                    self.previousViewController(viewCount: 1)
-                }
-            }
-        }
+ 
     }
     
     /*********************************************************************/
     /************************ Delete Note Button  ************************/
     /*********************************************************************/
     @IBAction func deleteNoteButton(_ sender: Any) {
-        print("delete button pressed")
-        let oldLocationDB = self.db.child("Users/\(userID)/Locations/\(selectedLocation)/items/\(updateTitle)") //find location to delete
-        oldLocationDB.removeValue() //remove the values from the old location
-        /******* region list **********/
-        for (regionIndex, region) in regionList.enumerated(){ //loop through the regionList
-            if (region.header == selectedLocation){ //if the region clicked header equals the identifier
-                for (index, notes) in region.notes.enumerated(){ //loop through the notes array
-                    if (notes.name == updateTitle){ //if note is equal to the title of the note to delete
-                        regionList[regionIndex].notes.remove(at: index) //remove note
-                    }
-                }
-            }
-        }
+        
         previousViewController(viewCount: 2)
     }
     

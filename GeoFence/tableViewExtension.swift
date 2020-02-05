@@ -6,11 +6,14 @@ import FirebaseAuth
 import FBSDKCoreKit
 import FBSDKLoginKit
 import GoogleMaps
+import ChromaColorPicker
 
 var menuList = [menuDisplay(menuItem: String(systemCollection!.systemName), menuDetails: Int(0)),
                 menuDisplay(menuItem: "Locations", menuDetails: Int(3)),
                 menuDisplay(menuItem: "Show Geofence", menuDetails: Int(0)),
-                menuDisplay(menuItem: "Settings", menuDetails: Int(0)),
+                menuDisplay(menuItem: "3D View", menuDetails: Int(0)),
+                menuDisplay(menuItem: "Map View", menuDetails: Int(4)),
+                menuDisplay(menuItem: "Theme Settings", menuDetails: Int(5)),
                 menuDisplay(menuItem: "Help", menuDetails: Int(1)),
                 menuDisplay(menuItem: "Logout", menuDetails: Int(0))]
 
@@ -100,7 +103,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
                 }
             } else {
                 if (menuList[indexPath.row].menuItem != "Locations") {
-                    if menuList[indexPath.row].menuDetails == 0{ ////if menu detail is 0 do not display
+                    if menuList[indexPath.row].menuDetails == 0{ //if menu detail is 0 do not display
                         cell?.textLabel?.text = ""
                     }else{
                         cell?.textLabel?.text = String(menuList[indexPath.row].menuDetails)
@@ -113,6 +116,19 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
                 cell?.menuIcon?.image = UIImage(named: "Account")
             }else{
                 cell?.menuIcon?.image = UIImage(named: menuList[indexPath.row].menuItem)
+            }
+            if(menuList[indexPath.row].menuItem == menuList[3].menuItem){
+                let switchView = UISwitch(frame: .zero)
+                switchView.setOn(false, animated: true)
+                switchView.thumbTintColor = UIColor().HexToColor(hexString: colorCollection!.systemBackground , alpha: 1.0)
+                switchView.layer.cornerRadius = 1
+                switchView.tag = indexPath.row // for detect which row switch Changed
+                switchView.addTarget(self, action: #selector(self.switchChanged(_:)), for: .valueChanged)
+                cell!.accessoryView = switchView
+                switchView.backgroundColor = UIColor.lightGray
+                switchView.layer.cornerRadius = 16.0
+                switchView.onTintColor = UIColor.white
+                switchView.thumbTintColor = UIColor().HexToColor(hexString: colorCollection!.systemMenuButton, alpha: 1.0)
             }
             return cell!
         } else if tableView == self.noteTableView{ //ensure to attach datasource and delegate
@@ -192,7 +208,6 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
                 cell?.textLabel?.text = String(indexPath.row + 1)
                 
             }
-            
             let place = self.resultsArray[indexPath.row]
             print("place \(place["coordinate"]?.latitude as Any)")
             if let label = cell?.searchDistance{
@@ -206,6 +221,32 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
         }
         return UITableViewCell()
     }
+    @objc func switchChanged(_ sender : UISwitch!){
+          print("table row switch Changed \(sender.tag)")
+          print("The switch is \(sender.isOn ? "ON" : "OFF")")
+        if (sender.isOn == true){
+            mapCollection!.system3DDisplay = 90
+            createMapView() //Create map for view
+            print("3D display active")
+        }else{
+            mapCollection!.system3DDisplay = 0
+            createMapView() //Create map for view
+            print("3D display inactive")
+        }
+        let locationDB = self.db.child("Users/\(userID)/Settings/systemMap/system3DDisplay") //set location
+        locationDB.setValue(mapCollection!.system3DDisplay) { //set the for touch to database
+            (error, ref) in
+            if error != nil {
+                print(error!) //display if there is an error
+            }
+            else {
+                print("Settings saved successfully!") //print successfully
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5){ //Delay 2 secs then segue.
+            self.closeMenu()//close the menu
+        }
+    }
     
     @objc func addNoteButtonPressed(sender:Any){
         print(selectedLocation)
@@ -218,6 +259,8 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
             return UITableViewCell.EditingStyle.delete
         }
     }
+    
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {//cells that were selected item
         if tableView == menuTableView{ //Select the menu list
             if menuList[indexPath.row].menuItem == String(systemCollection!.systemName){
@@ -230,17 +273,153 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5){ //Delay 2 secs then segue.
                     self.performSegue(withIdentifier: "mainToLocation", sender: nil)//segues to the settings page
                 }
-            }else if menuList[indexPath.row].menuItem == "Settings"{
-                print("Settings")
+            }else if menuList[indexPath.row].menuItem == "Theme Settings"{
+                print("Theme Settings")
                 closeMenu()//close the menu
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2){ //Delay 2 secs then segue.
-                    self.performSegue(withIdentifier: "mainToSettings", sender: nil)//segues to the settings page
+                /*
+                let alert = UIAlertController(title: "Theme",message: "Change theme color", preferredStyle: .actionSheet)
+                let doneAction = UIAlertAction(title: "Done", style: .cancel, handler: {(alert: UIAlertAction!) in print("Done")})
+                    
+
+                    
+                    
+                alert.addAction(doneAction)
+ */
+                let alertController = UIAlertController(title: "Theme",message: "Change theme color", preferredStyle: .actionSheet)
+               //let neatColorPicker = ChromaColorPicker(frame: CGRect(x: margin, y: margin, width: alertController.view.bounds.size.width - margin * 4.0, height: 500))
+                    //neatColorPicker.delegate = self as? ChromaColorPickerDelegate //ChromaColorPickerDelegate
+               //neatColorPicker.padding = 5
+               //neatColorPicker.stroke = 3
+               //neatColorPicker.hexLabel.textColor = UIColor.white
+                    
+                    
+                /* Calculate relative size and origin in bounds */
+                let pickerSize = CGSize(width: alertController.view.bounds.width*0.8, height: alertController.view.bounds.width*0.8)
+                let pickerOrigin = CGPoint(x: alertController.view.bounds.midX - pickerSize.width/2, y: alertController.view.bounds.midY - pickerSize.height)
+                let neatColorPicker = ChromaColorPicker(frame: CGRect(origin: pickerOrigin, size: pickerSize))
+                neatColorPicker.padding = 0
+                neatColorPicker.hexLabel.isHidden = true
+                neatColorPicker.adjustToColor(UIColor.green)
+                //neatColorPicker.supportsShadesOfGray = true // Normally false be default
+                neatColorPicker.layout()
+
+                alertController.view.translatesAutoresizingMaskIntoConstraints = false
+                alertController.view.heightAnchor.constraint(equalToConstant: 600).isActive = true
+                alertController.view.addSubview(neatColorPicker)
+                //neatColorPicker.center = self.view.center
+                neatColorPicker.center.x = self.view.center.x
+
+                    
+                let selectAction = UIAlertAction(title: "Select", style: .default) { (action) in
+                    print("selection")
+                    let neatColorPicker = ChromaColorPicker(frame: CGRect(x: 0, y: 0, width: 300, height: 300))
+                
+                    neatColorPicker.supportsShadesOfGray = true // Normally false be default
                 }
+
+                let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+                    alertController.addAction(selectAction)
+                alertController.addAction(cancelAction)
+                self.present(alertController, animated: true, completion: nil)
+                    
+
+                
+
+                    
+                /*
+                subview.layer.cornerRadius = 0
+                subview.layer.borderWidth = 1
+                subview.layer.borderColor = UIColor().HexToColor(hexString: colorCollection!.systemBackground , alpha: 1.0).cgColor
+                subview.layer.opacity = 0.7
+                subview.layer.shadowColor = UIColor.black.cgColor //sets the color of the shadow, and needs to be a CGColor
+                subview.layer.shadowOpacity = 1
+                subview.layer.shadowOffset = CGSize.zero //ets how far away
+                subview.backgroundColor = UIColor(red: (195/255.0), green: (68/255.0), blue: (122/255.0), alpha: 1.0)
+              
+                    
+                    
+                DispatchQueue.main.async {
+                    self.present(alert, animated: true, completion:{})
+                }
+                    
+                    
+                    
+                    
+                    */
+                                      
+                    
+                    /*
+                    let alert = UIAlertController(title: "Theme",message: "Change theme color", preferredStyle: .actionSheet)
+                    let dismissAction = UIAlertAction(title: "Dismiss", style: .destructive, handler: nil)
+                    alert.addAction(dismissAction)
+                    self.present(alert, animated: true, completion:  nil)
+                    // change the background color
+
+                    let subview = (alert.view.subviews.first?.subviews.first?.subviews.first!)! as UIView
+                    subview.layer.cornerRadius = 0
+                    subview.layer.borderWidth = 1
+                    subview.layer.borderColor = UIColor().HexToColor(hexString: colorCollection!.systemBackground , alpha: 1.0).cgColor
+                    subview.layer.opacity = 0.7
+                    subview.layer.shadowColor = UIColor.black.cgColor //sets the color of the shadow, and needs to be a CGColor
+                    subview.layer.shadowOpacity = 1
+                    subview.layer.shadowOffset = CGSize.zero //ets how far away
+                    subview.layer.shadowColor = UIColor().HexToColor(hexString: "#000000" , alpha: 1.0).cgColor
+                    subview.backgroundColor = UIColor(red: (195/255.0), green: (68/255.0), blue: (122/255.0), alpha: 1.0)*/
+                }
+            }else if menuList[indexPath.row].menuItem == "3D View"{
+                print("3D View")
+            }else if menuList[indexPath.row].menuItem == "Map View"{
+                print("Pull up Map View")
+                let alertController = UIAlertController(title: "Theme",message: "Change theme color", preferredStyle: .actionSheet)
+                alertController.view.translatesAutoresizingMaskIntoConstraints = false
+                alertController.view.heightAnchor.constraint(equalToConstant: 600).isActive = true
+                let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+                let defaultAction = UIAlertAction(title: "Default", style: .default, handler: { (action) in
+                    setMapView = false
+                    self.createMapView() //Create map for view
+                })
+                let scrollView = UIScrollView(frame: CGRect(x: 0, y: 70, width: alertController.view.frame.width - 15, height: 405))
+                var frame: CGRect = CGRect(x:0, y:0, width:0, height:0)
+                
+                scrollView.delegate = self
+                scrollView.isPagingEnabled = true
+                self.view.addSubview(scrollView)
+                for index in 0...4 {
+                    let subView = UIView(frame: frame)
+                    let viewButton = UIButton()
+                    if (index == 1) {
+                        viewButton.tag = 1
+                        viewButton.backgroundColor = UIColor(patternImage: UIImage(named: "paperMap.jpeg")!)
+                    } else if (index == 2) {
+                        viewButton.tag = 2
+                        viewButton.backgroundColor = UIColor(patternImage: UIImage(named: "grayscaleMap.jpeg")!)
+                    }else if (index == 3){
+                        viewButton.tag = 3
+                        viewButton.backgroundColor = UIColor(patternImage: UIImage(named: "darkMap.jpeg")!)
+                    }else if (index == 4){
+                        viewButton.tag = 4
+                        viewButton.backgroundColor = UIColor(patternImage: UIImage(named: "retroMap.jpeg")!)
+                    }
+                    frame.origin.x = scrollView.frame.size.width * CGFloat(index)
+                    frame.size = scrollView.frame.size
+                    viewButton.layer.cornerRadius = 10
+                    viewButton.frame = CGRect(x: 10, y: 0, width: frame.size.width - 20, height: frame.size.height - 10)
+                    viewButton.addTarget(self, action: #selector(self.pressed(sender:)), for: .touchUpInside)
+                    subView.addSubview(viewButton)
+                    //subView.backgroundColor = backgroundColors[index]
+                    scrollView.addSubview(subView)
+                }
+                scrollView.contentSize = CGSize(width:scrollView.frame.size.width * 4,height: scrollView.frame.size.height)
+                alertController.view.addSubview(scrollView)
+                alertController.addAction(defaultAction)
+                alertController.addAction(cancelAction)
+                self.present(alertController, animated: true, completion: nil)
+                closeMenu()//close the menu
             }else if menuList[indexPath.row].menuItem == "Help"{
                 print("Help")
                 performSegue(withIdentifier: "mainToHelp", sender: nil)//segues to the feed page
             }else if menuList[indexPath.row].menuItem == "Show Geofence"{
-                
                 UIView.transition(with: self.navigationController!.view, duration: 0.5, options: UIView.AnimationOptions.transitionFlipFromRight, animations: nil, completion: nil)
                 if (geofenceDisplay == false){
                     geoMapView.isHidden = true//hide menu
@@ -265,13 +444,41 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
             getSearchLocation(indexPath: indexPath.row)
         }
     }
+    @objc func pressed(sender: UIButton!) {
+        setMapView = true
+        switch sender.tag{
+        case 1:
+            mapView.mapStyle(withFilename: "paper", andType: "json")
+        case 2:
+            mapView.mapStyle(withFilename: "grayscale", andType: "json")
+        case 3:
+            mapView.mapStyle(withFilename: "dark", andType: "json")
+        case 4:
+            mapView.mapStyle(withFilename: "retro", andType: "json")
+        default:
+            mapView.mapStyle(withFilename: "default", andType: "json")
+        }
+        dismiss(animated: true, completion: nil)
+    }
+
+    func createSwitch () -> UISwitch{
+        let switchControl = UISwitch(frame:CGRect(x: 10, y: 20, width: 0, height: 0));
+        switchControl.isOn = true
+        switchControl.setOn(true, animated: false);
+        //switchControl.addTarget(self, action: "switchValueDidChange:", for: .valueChanged);
+        return switchControl
+    }
+    
+    
+    
+    
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
         if tableView == self.noteTableView{ //Select the menu list
             let editAction = UITableViewRowAction(style: UITableViewRowAction.Style.default, title: "edit") { (action , indexPath) -> Void in
                 self.isEditing = false
                 print("Edit button pressed")
                 updateMessage = noteList[indexPath.row].message
-                updateTitle = noteList[indexPath.row].name
+                self.updateTitle = noteList[indexPath.row].name
                 updateStatus = noteList[indexPath.row].status
                 self.performSegue(withIdentifier: "mainToNoteDisplay", sender: nil) //segue to the notes screen
             }
@@ -315,4 +522,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
             }
         }
     }
+}
+extension CGRect {
+    var center: CGPoint { return CGPoint(x: midX, y: midY) }
 }

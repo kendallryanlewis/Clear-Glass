@@ -94,25 +94,26 @@ var selectedLocation = "" //save the location globally that was clicked
 
 class locationsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     @IBOutlet var pageView: UIView!
-    @IBOutlet weak var locationTableView: UITableView!
+    @IBOutlet weak var locationTableView: SelfSizedTableView!
     @IBOutlet weak var locationMainView: UIView!
     @IBOutlet weak var locationTitle: UITextField!
     @IBOutlet weak var deleteLocationView: UIView!
     //Set firebase database
     let db = Database.database().reference()
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         //navigationController!.navigationBar.isTranslucent = false
         if locationTableView != nil{
             locationTableView.dataSource = self
             locationTableView.delegate = self
-            self.navigationItem.title = "LOCATIONS"
             locationTableView.layer.shadowColor = UIColor.black.cgColor
             locationTableView.layer.shadowOpacity = Float(systemCollection!.systemDropShadow) //sets how transparent the shadow is, where 0 is invisible and 1 is as strong as possible
             locationTableView.layer.shadowOffset = CGSize.zero
             locationTableView.layer.shadowRadius = 10
             locationTableView.layer.cornerRadius = 8
+            locationTableView.estimatedRowHeight = 100
+            locationTableView.maxHeight = 105 * 7 //527.5
+            
         }else if locationMainView != nil{
             //locationMainView.roundCorners(corners: [.bottomLeft, .bottomRight], radius: 8.0)
             locationMainView.layer.shadowColor = UIColor.black.cgColor
@@ -177,12 +178,15 @@ class locationsViewController: UIViewController, UITableViewDataSource, UITableV
             if (indexPath.row % 2 == 0 ){
                 cell.tabBackground.backgroundColor =  UIColor().HexToColor(hexString: "#ffffff", alpha: 1.0)
                 cell.divderView.backgroundColor = UIColor().HexToColor(hexString: colorCollection!.systemForeground, alpha: 1.0)
-                cell.divderView.backgroundColor = UIColor().HexToColor(hexString: colorCollection!.systemForeground, alpha: 1.0)
                 cell.locationNotes.textColor  = UIColor().HexToColor(hexString: colorCollection!.systemForeground, alpha: 1.0)
+                cell.locationTitle.textColor  = UIColor().HexToColor(hexString: "#000000", alpha: 1.0)
+                cell.locationDate.textColor  = UIColor().HexToColor(hexString: "#000000", alpha: 1.0)
             } else{
                 cell.tabBackground.backgroundColor =  UIColor().HexToColor(hexString: colorCollection!.systemForeground, alpha: 1.0)
                 cell.divderView.backgroundColor = UIColor().HexToColor(hexString: "#ffffff", alpha: 1.0)
-                cell.locationNotes.textColor = UIColor().HexToColor(hexString: "#ffffff", alpha: 1.0)
+                cell.locationNotes.textColor  = UIColor().HexToColor(hexString: "#ffffff", alpha: 1.0)
+                cell.locationTitle.textColor  = UIColor().HexToColor(hexString: "#000000", alpha: 1.0)
+                cell.locationDate.textColor  = UIColor().HexToColor(hexString: "#000000", alpha: 1.0)
             }
             if cell == nil {
                 tableView.register(locationCell.classForCoder(), forCellReuseIdentifier: "locationCell")
@@ -264,34 +268,7 @@ class locationsViewController: UIViewController, UITableViewDataSource, UITableV
     
 
     @IBAction func addLocationButton(_ sender: Any) {
-        print("set address \(createdLocation[0].address)")
-        let titleTextField = locationTitle.text!
-        if titleTextField != ""{
-            selectedLocation = titleTextField
-            let longitude = createdLocation[0].longitude
-            let latitude = createdLocation[0].latitude
-            let currentAddress = createdLocation[0].address
-            let currentLoc = createdLocation[0].location
-            let locationDictionary : NSDictionary = [
-                "location": "\(currentLoc)", //add username to database
-                "header": "\(titleTextField)",
-                "longitude": "\(longitude)", //add longitude
-                "latitude": "\(latitude)", //add latitude
-                "address": "\(currentAddress)" // add name to address
-            ]
-            locationDescription.removeAll() //clear all location details elements
-            db.child("Users/\(userID)/Locations/\(titleTextField)").setValue(locationDictionary) {
-                (error, ref) in
-                if error != nil {
-                    print(error!)
-                }
-                else {
-                    regionList.append(createRegion(longitude: "\(longitude)", latitude: "\(latitude)", location: "\(currentLoc)", header: "\(titleTextField)", notes: noteList, address: "\(currentAddress)"))//append each location and note(s) to array
-                    //add notes to this section
-                    print("Location saved successfully!")
-                }
-            }
-        }
+   
     }
     @IBAction func returnHome(_ sender: Any) {
 
